@@ -1,50 +1,717 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-  <title>Spin Wheel Example - Playground</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <link rel="icon" href="data:image/x-icon;," type="image/x-icon">
-  <link rel="stylesheet" href="./css/index.css"/>
-  <script src="./js/index.js" type="module"></script>
+  <title>Spin Wheel - Seleksi Pemenang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #D5DEEF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .hidden { display: none !important; }
+
+    /* Main Wheel Styles */
+    .frame-center {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 50px;
+      z-index: 1;
+    }
+    .wheel-container { 
+      position: relative; 
+      width: 600px; 
+      height: 600px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      filter: drop-shadow(0 10px 40px rgba(0,0,0,0.5));
+    }
+    .wheel-wrapper { 
+      position: absolute; 
+      width: 600px; 
+      height: 600px; 
+      border-radius: 50%; 
+      overflow: visible; 
+    }
+    canvas { width: 100%; height: 100%; }
+    .wheel-center {
+      position: absolute; 
+      width: 120px; 
+      height: 120px; 
+      border-radius: 50%; 
+      background: radial-gradient(circle at 30% 30%, #D4AF37, #C5A028, #B8941F);
+      box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.4), 
+        inset 0 2px 15px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 10px rgba(0, 0, 0, 0.3); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 10; 
+      border: 8px solid #8B6914; 
+      font-size: 18px; 
+      color: #1a1a2e; 
+      font-weight: 700; 
+      letter-spacing: 2px; 
+      cursor: pointer; 
+      -webkit-user-select: none;
+      user-select: none; 
+      transition: transform 0.2s ease;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+    }
+    .wheel-center:hover { transform: scale(1.1); }
+    .pointer { 
+      position: absolute; 
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 25px solid transparent;
+      border-right: 25px solid transparent;
+      border-top: 80px solid #DC143C;
+      z-index: 20;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    }
+    .pointer::after { 
+      content: ''; 
+      position: absolute; 
+      top: -95px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+      height: 50px; 
+      background: radial-gradient(circle at 35% 35%, #FFD700, #DAA520, #B8860B);
+      border-radius: 50%; 
+      border: 4px solid #8B4513;
+      box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.5), 
+        inset 0 2px 8px rgba(255,255,255,0.4),
+        inset 0 -2px 6px rgba(0,0,0,0.3);
+    }
+    
+    /* Pop-up Styles */
+    .popup-container {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
+      background: rgba(10, 10, 20, 0.95);
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      z-index: 1000;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .popup-content {
+      background: linear-gradient(135deg, #fdf6e3 0%, #f5e6d3 100%);
+      padding: 40px 60px; 
+      border-radius: 20px; 
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.5s ease;
+      border: 4px solid #8B4513;
+      max-width: 500px;
+    }
+    @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .popup-content h2 { 
+      font-size: 32px; 
+      margin-bottom: 10px; 
+      color: #654321; 
+      text-transform: uppercase; 
+      letter-spacing: 3px; 
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    .popup-subtitle { 
+      font-size: 14px; 
+      color: #8B4513; 
+      margin-bottom: 20px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px; 
+    }
+    #winner-name, #prize-name { 
+      font-size: 42px; 
+      font-weight: 700; 
+      color: #654321; 
+      margin: 10px 0; 
+      padding: 20px; 
+      background: linear-gradient(135deg, #ffffff, #f0f0f0); 
+      border-radius: 12px; 
+      border-left: 6px solid #D4AF37;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .prize-image { 
+      max-width: 100%; 
+      height: 250px; 
+      margin-bottom: 20px; 
+      object-fit: contain; 
+    }
+    .popup-buttons { 
+      display: flex; 
+      gap: 15px; 
+      justify-content: center; 
+      margin-top: 30px; 
+    }
+    .btn {
+      padding: 12px 24px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      border: none;
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+      text-transform: uppercase; 
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .btn:hover:not(:disabled) { 
+      transform: translateY(-2px); 
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3); 
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { 
+      background: linear-gradient(135deg, #8B4513, #A0522D); 
+      color: white; 
+    }
+    .btn-secondary { 
+      background: linear-gradient(135deg, #6c757d, #5a6268); 
+      color: white; 
+    }
+    .btn-success { 
+      background: linear-gradient(135deg, #28a745, #218838); 
+      color: white; 
+    }
+    #start-draw-button { 
+      display: block; 
+      margin: 0 auto;
+      font-size: 20px;
+      padding: 20px 50px;
+    }
+
+    /* Fullscreen Button */
+    #fullscreen-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+      background: linear-gradient(135deg, #8B4513, #A0522D);
+      border: 3px solid #fdf6e3;
+      border-radius: 50%;
+      width: 55px;
+      height: 55px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+    }
+    #fullscreen-button:hover { 
+      transform: scale(1.1); 
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    #fullscreen-button svg { width: 24px; height: 24px; stroke: white; }
+  </style>
 </head>
 
 <body>
-  <section class="frame-center">
-    <div class="wheel-wrapper"></div>
 
-    <div class="toolbar" data-name="export">
-      <button class="btn export">Export as JSON...</button>
+  <button id="fullscreen-button" title="Toggle Fullscreen">
+    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+    </svg>
+  </button>
+
+  <!-- Main Wheel Section -->
+  <section id="wheel-section" class="frame-center hidden">
+    <div class="wheel-container">
+      <div class="wheel-wrapper">
+        <canvas id="wheel-canvas" width="1200" height="1200"></canvas>
+      </div>
+      <div class="wheel-center">SPIN</div>
+      <div class="pointer"></div>
     </div>
   </section>
 
-  <section class="frame-right">
-      <div class="input-group" data-name="borderColor" data-type="color"></div>
-      <div class="input-group" data-name="borderWidth" data-type="range" data-min="0" data-max="250" data-multiplier="0.1"></div>
-      <div class="input-group" data-name="debug" data-type="checkbox"></div>
-      <div class="input-group" data-name="image" data-type="image"></div>
-      <div class="input-group" data-name="isInteractive" data-type="checkbox"></div>
-      <div class="input-group" data-name="itemBackgroundColors" data-type="textboxArray"></div>
-      <div class="input-group" data-name="itemLabelAlign" data-type="select" data-options="left|right|center"></div>
-      <div class="input-group" data-name="itemLabelBaselineOffset" data-type="range" data-min="-50" data-max="50" data-multiplier="0.01"></div>
-      <div class="input-group" data-name="itemLabelColors" data-type="textboxArray"></div>
-      <div class="input-group" data-name="itemLabelFont" data-type="textbox"></div>
-      <div class="input-group" data-name="itemLabelFontSizeMax" data-type="range" data-min="10" data-max="150"></div>
-      <div class="input-group" data-name="itemLabelRadius" data-type="range" data-min="0" data-max="100" data-multiplier="0.01"></div>
-      <div class="input-group" data-name="itemLabelRadiusMax" data-type="range" data-min="0" data-max="100" data-multiplier="0.01"></div>
-      <div class="input-group" data-name="itemLabelRotation" data-type="range" data-min="0" data-max="359"></div>
-      <div class="input-group" data-name="itemLabelStrokeColor" data-type="color"></div>
-      <div class="input-group" data-name="itemLabelStrokeWidth" data-type="range" data-min="0" data-max="30"></div>
-      <div class="input-group" data-name="lineColor" data-type="color"></div>
-      <div class="input-group" data-name="lineWidth" data-type="range" data-min="0" data-max="200" data-multiplier="0.1"></div>
-      <div class="input-group" data-name="overlayImage" data-type="image"></div>
-      <div class="input-group" data-name="pixelRatio" data-type="range" data-min="0" data-max="40" data-multiplier="0.1"></div>
-      <div class="input-group" data-name="pointerAngle" data-type="range" data-min="0" data-max="360"></div>
-      <div class="input-group" data-name="radius" data-type="range" data-min="10" data-max="100" data-multiplier="0.01"></div>
-      <div class="input-group" data-name="rotationResistance" data-type="range" data-min="-200" data-max="0"></div>
-      <div class="input-group" data-name="rotationSpeedMax" data-type="range" data-min="50" data-max="1000"></div>
-  </section>
-</body>
+  <!-- Prize Display Pop-up -->
+  <div id="prize-popup" class="popup-container hidden">
+    <div class="popup-content">
+      <h2 id="prize-title">Hadiah Berikutnya</h2>
+      <p class="popup-subtitle" id="prize-counter"></p>
+      <img id="prize-image-display" class="prize-image" src="" alt="Prize Image"/>
+      <div class="popup-buttons">
+        <button id="next-spin-button" class="btn btn-primary">Lanjutkan ke Spin</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- Winner Confirmation Pop-up -->
+  <div id="winner-popup" class="popup-container hidden">
+    <div class="popup-content">
+      <h2>Pemenang Undian</h2>
+      <p class="popup-subtitle">Selamat Kepada</p>
+      <p id="winner-name"></p>
+      <img id="winner-prize-image" class="prize-image" src="" alt="Prize Image"/>
+      <div class="popup-buttons">
+        <button id="skip-button" class="btn btn-secondary">Skip</button>
+        <button id="ok-button" class="btn btn-success">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Initial Start Button -->
+  <button id="start-draw-button" class="btn btn-primary">Mulai Undian</button>
+
+  <script>
+    // --- DOM Elements ---
+    const wheelSection = document.getElementById('wheel-section');
+    const startDrawButton = document.getElementById('start-draw-button');
+    const canvas = document.getElementById('wheel-canvas');
+    const ctx = canvas.getContext('2d');
+    const wheelWrapper = document.querySelector('.wheel-wrapper');
+    const wheelCenter = document.querySelector('.wheel-center');
+    const fullscreenButton = document.getElementById('fullscreen-button');
+
+    const prizePopup = document.getElementById('prize-popup');
+    const prizeTitle = document.getElementById('prize-title');
+    const prizeCounter = document.getElementById('prize-counter');
+    const prizeImageDisplay = document.getElementById('prize-image-display');
+    const nextSpinButton = document.getElementById('next-spin-button');
+
+    const winnerPopup = document.getElementById('winner-popup');
+    const winnerNameEl = document.getElementById('winner-name');
+    const winnerPrizeImage = document.getElementById('winner-prize-image');
+    const okButton = document.getElementById('ok-button');
+    const skipButton = document.getElementById('skip-button');
+
+    // --- Data Setup ---
+    let participants = [];
+    let prizes = [];
+    const winners = [];
+    
+    // --- State ---
+    let currentPrize = null;
+    let currentWinner = null;
+    let isSpinning = false;
+    let currentRotation = 0;
+    const colors = ['#A0522D', '#8B4513'];
+
+    // --- Functions ---
+
+    function generateData() {
+      const nameList = [
+        "Aditya Pratama", "Agung Nugroho", "Agus Setiawan", "Ahmad Fauzi", "Aji Santoso", 
+        "Aminah Sari", "Amir Mahmud", "Andi Wijaya", "Andika Putra", "Anggun Lestari",
+        "Ani Suryani", "Anisa Fitri", "Antonius Budi", "Ardiansyah Putra", "Ari Wibowo",
+        "Arif Rahman", "Asep Sunandar", "Bagas Prakoso", "Bambang Susilo", "Bayu Anggara",
+        "Bima Sakti", "Budi Hartono", "Cahyo Kumoro", "Candra Kirana", "Cecep Arif",
+        "Citra Ayu", "Dadang Supriatna", "Dedi Mulyadi", "Deni Iskandar", "Desi Ratnasari",
+        "Dewi Anggraini", "Dian Permata", "Dimas Anggara", "Dina Mariana", "Dodo Firmansyah",
+        "Doni Saputra", "Eka Kurniawan", "Eko Prasetyo", "Endah Wulandari", "Erick Thohir",
+        "Erwin Gutawa", "Fajar Nugraha", "Farhan Jaelani", "Farida Yani", "Fatmawati Sukarno",
+        "Febri Haryadi", "Fitriani Indah", "Galang Rambu", "Gatot Subroto", "Gita Gutawa",
+        "Hadi Santoso", "Hafiz Abdullah", "Hana Pertiwi", "Handoko Susanto", "Hariadi Jaya",
+        "Harun Al Rasyid", "Hasan Basri", "Hendra Setiawan", "Heri Kiswanto", "I Gede Siman",
+        "Ika Putri", "Imam Bonjol", "Indah Permatasari", "Indra Lesmana", "Irfan Hakim",
+        "Iwan Fals", "Jajang Nurjaman", "Joko Widodo", "Jono Armstrong", "Kartika Sari",
+        "Kevin Sanjaya", "Lia Amelia", "Lilis Suryani", "Lukman Sardi", "Maria Selena",
+        "Mega Anggraini", "Mila Karmila", "Mochtar Riady", "Muhammad Ali", "Nadia Vega",
+        "Nana Sutrisna", "Nia Ramadhani", "Nina Tamam", "Nugroho Notosusanto", "Nurul Arifin",
+        "Putra Bangsa", "Putri Ayu", "Rahmat Hidayat", "Rian Ardianto", "Ridwan Kamil",
+        "Rina Nose", "Rini Wulandari", "Rizky Febian", "Rudi Hartono", "Sari Puspita",
+        "Siti Nurhaliza", "Slamet Rahardjo", "Sri Mulyani", "Susi Susanti", "Taufik Hidayat"
+      ];
+      participants = nameList.map(name => ({ name }));
+
+      const prizeImages = [
+        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1522273400909-fd1a8f77637e?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop',
+      ];
+      prizes = Array.from({ length: 77 }, (_, i) => ({
+        name: `Hadiah ${i + 1}`,
+        image: prizeImages[i % prizeImages.length]
+      }));
+    }
+
+    function drawWheel() {
+      if (participants.length === 0) return;
+      const baseRadius = canvas.width / 2;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      const outerRimRadius = baseRadius * 0.50;
+      const innerRimRadius = baseRadius * 0.42;
+      const wheelRadius = baseRadius * 0.88;
+      const spokeRadius = baseRadius * 0.08;
+      const handleLength = baseRadius * 0.12;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // --- Draw Slices first (behind everything) ---
+      const sliceAngle = (2 * Math.PI) / participants.length;
+      participants.forEach((participant, i) => {
+        const startAngle = i * sliceAngle - Math.PI / 2;
+        const endAngle = startAngle + sliceAngle;
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, wheelRadius, startAngle, endAngle);
+        ctx.lineTo(centerX, centerY);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw text with smaller background inside the rim area
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + sliceAngle / 2);
+        
+        const textRadius = (wheelRadius + outerRimRadius) / 2;
+        const fontSize = Math.max(14, 20 - participants.length / 8);
+        ctx.font = `bold ${fontSize}px 'Segoe UI', sans-serif`;
+        
+        // Measure text width
+        const textMetrics = ctx.measureText(participant.name);
+        const textWidth = textMetrics.width;
+        const textHeight = fontSize;
+        
+        // Draw compact background for text
+        const padding = 6;
+        const bgWidth = textWidth + padding * 2;
+        const bgHeight = textHeight + padding * 1.2;
+        
+        ctx.fillStyle = 'rgba(255, 248, 220, 0.95)';
+        ctx.fillRect(textRadius - bgWidth/2, -bgHeight/2, bgWidth, bgHeight);
+        
+        // Draw border
+        ctx.strokeStyle = 'rgba(101,67,33,0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(textRadius - bgWidth/2, -bgHeight/2, bgWidth, bgHeight);
+        
+        // Draw text
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#654321';
+        ctx.fillText(participant.name, textRadius, 0);
+        
+        ctx.restore();
+      });
+
+      // --- Draw Outer Rim (Ship Wheel Rim) ---
+      const rimGradient = ctx.createRadialGradient(centerX, centerY, innerRimRadius, centerX, centerY, outerRimRadius);
+      rimGradient.addColorStop(0, '#6D4C41');
+      rimGradient.addColorStop(0.3, '#5D4037');
+      rimGradient.addColorStop(0.7, '#4E342E');
+      rimGradient.addColorStop(1, '#3E2723');
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRimRadius, 0, 2 * Math.PI);
+      ctx.arc(centerX, centerY, innerRimRadius, 0, 2 * Math.PI, true);
+      ctx.fillStyle = rimGradient;
+      ctx.fill();
+      
+      // Rim inner shadow
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerRimRadius + 2, 0, 2 * Math.PI);
+      ctx.stroke();
+      
+      // Rim outer highlight
+      ctx.strokeStyle = 'rgba(139,115,85,0.3)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRimRadius - 3, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // --- Draw Spokes (Ship Wheel Spokes) ---
+      const numSpokes = 8;
+      
+      for (let i = 0; i < numSpokes; i++) {
+        const angle = (i / numSpokes) * (2 * Math.PI);
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+        
+        // Main spoke shaft
+        const spokeGradient = ctx.createLinearGradient(-18, 0, 18, 0);
+        spokeGradient.addColorStop(0, '#3E2723');
+        spokeGradient.addColorStop(0.5, '#6D4C41');
+        spokeGradient.addColorStop(1, '#3E2723');
+        
+        ctx.fillStyle = spokeGradient;
+        ctx.fillRect(-18, spokeRadius, 36, innerRimRadius - spokeRadius);
+        
+        // Spoke edges (darker)
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(-18, spokeRadius, 4, innerRimRadius - spokeRadius);
+        ctx.fillRect(14, spokeRadius, 4, innerRimRadius - spokeRadius);
+        
+        // Spoke highlight
+        ctx.fillStyle = 'rgba(139,115,85,0.25)';
+        ctx.fillRect(-4, spokeRadius, 8, innerRimRadius - spokeRadius);
+        
+        // Handle extending beyond rim
+        const handleStart = outerRimRadius + 5;
+        const handleEnd = handleStart + handleLength;
+        
+        // Handle shaft
+        const handleGradient = ctx.createLinearGradient(-12, handleStart, 12, handleStart);
+        handleGradient.addColorStop(0, '#3E2723');
+        handleGradient.addColorStop(0.5, '#6D4C41');
+        handleGradient.addColorStop(1, '#3E2723');
+        
+        ctx.fillStyle = handleGradient;
+        ctx.fillRect(-12, handleStart, 24, handleLength);
+        
+        // Handle edges
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(-12, handleStart, 3, handleLength);
+        ctx.fillRect(9, handleStart, 3, handleLength);
+        
+        // Handle end cap (rounded)
+        const capY = handleEnd;
+        const capGradient = ctx.createRadialGradient(0, capY - 3, 2, 0, capY, 14);
+        capGradient.addColorStop(0, '#8D6E63');
+        capGradient.addColorStop(0.7, '#6D4C41');
+        capGradient.addColorStop(1, '#4E342E');
+        
+        ctx.beginPath();
+        ctx.arc(0, capY, 14, 0, 2 * Math.PI);
+        ctx.fillStyle = capGradient;
+        ctx.fill();
+        
+        ctx.strokeStyle = '#3E2723';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+
+      // --- Draw Center Hub ---
+      const hubGradient = ctx.createRadialGradient(centerX - 25, centerY - 25, 0, centerX, centerY, spokeRadius);
+      hubGradient.addColorStop(0, '#A1887F');
+      hubGradient.addColorStop(0.4, '#8D6E63');
+      hubGradient.addColorStop(0.7, '#6D4C41');
+      hubGradient.addColorStop(1, '#4E342E');
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, spokeRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = hubGradient;
+      ctx.fill();
+      
+      // Hub border
+      ctx.strokeStyle = '#3E2723';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+      
+      // Inner hub detail
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, spokeRadius * 0.85, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      // Hub bolts/rivets
+      const boltPositions = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
+      boltPositions.forEach(boltAngle => {
+        const boltDist = spokeRadius * 0.65;
+        const boltX = centerX + Math.cos(boltAngle) * boltDist;
+        const boltY = centerY + Math.sin(boltAngle) * boltDist;
+        
+        // Bolt body
+        ctx.beginPath();
+        ctx.arc(boltX, boltY, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#4E342E';
+        ctx.fill();
+        
+        ctx.strokeStyle = '#2C1810';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Bolt shine
+        ctx.beginPath();
+        ctx.arc(boltX - 3, boltY - 3, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(161,136,127,0.4)';
+        ctx.fill();
+      });
+    }
+
+    function setupNextRound() {
+      if (prizes.length === 0) {
+        alert('Semua hadiah telah diundi! Acara selesai.');
+        wheelSection.classList.add('hidden');
+        startDrawButton.classList.remove('hidden');
+        startDrawButton.textContent = 'Mulai Lagi';
+        return;
+      }
+
+      currentPrize = prizes.shift();
+      
+      prizeTitle.textContent = `Hadiah: ${currentPrize.name}`;
+      prizeCounter.textContent = `(${prizes.length + 1} hadiah tersisa)`;
+      prizeImageDisplay.src = currentPrize.image;
+      prizePopup.classList.remove('hidden');
+    }
+
+    function spin() {
+      if (isSpinning) return;
+      isSpinning = true;
+      wheelCenter.style.cursor = 'not-allowed';
+      wheelCenter.textContent = '...';
+      wheelCenter.style.transform = 'scale(1)';
+
+      // Random rotation (5-8 full spins + random angle)
+      const extraSpins = 5 + Math.random() * 3;
+      const randomAngle = Math.random() * 360;
+      const totalRotation = (extraSpins * 360) + randomAngle;
+      
+      const finalRotation = currentRotation + totalRotation;
+      currentRotation = finalRotation;
+
+      wheelWrapper.style.transition = 'transform 7s cubic-bezier(0.2, 1, 0.2, 1)';
+      wheelWrapper.style.transform = `rotate(${finalRotation}deg)`;
+
+      wheelWrapper.addEventListener('transitionend', handleSpinEnd, { once: true });
+    }
+    
+    function handleSpinEnd() {
+        isSpinning = false;
+        wheelCenter.style.cursor = 'pointer';
+        wheelCenter.textContent = 'SPIN';
+        
+        // Pointer is at TOP CENTER (straight up)
+        // Slices are drawn starting from -90 degrees (top)
+        
+        const sliceAngle = 360 / participants.length;
+        
+        // Get the wheel's current rotation
+        let normalizedRotation = currentRotation % 360;
+        if (normalizedRotation < 0) normalizedRotation += 360;
+        
+        // Calculate which slice is at the top
+        // Reverse direction since wheel rotates and pointer is fixed
+        let calculatedIndex = Math.floor((360 - normalizedRotation) / sliceAngle);
+        
+        let winnerIndex = calculatedIndex % participants.length;
+        
+        currentWinner = participants[winnerIndex];
+        
+        console.log('=== DEBUG INFO ===');
+        console.log('Current Rotation:', currentRotation);
+        console.log('Normalized Rotation:', normalizedRotation);
+        console.log('Slice Angle:', sliceAngle);
+        console.log('Calculated Index:', calculatedIndex);
+        console.log('Winner Index:', winnerIndex);
+        console.log('Winner Name:', currentWinner.name);
+        console.log('\nParticipants in drawing order (clockwise from top):');
+        participants.forEach((p, i) => {
+            console.log(`  Index ${i}: ${p.name}`);
+        });
+        
+        winnerNameEl.textContent = currentWinner.name;
+        winnerPrizeImage.src = currentPrize.image;
+        winnerPopup.classList.remove('hidden');
+        
+        confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#8B4513', '#A0522D', '#654321', '#D4AF37', '#ffffff']
+        });
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+          document.documentElement.mozRequestFullScreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          document.documentElement.webkitRequestFullscreen();
+        } else if (document.documentElement.msRequestFullscreen) {
+          document.documentElement.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      }
+    }
+
+    // --- Event Listeners ---
+
+    startDrawButton.addEventListener('click', () => {
+      generateData();
+      startDrawButton.classList.add('hidden');
+      setupNextRound();
+    });
+
+    nextSpinButton.addEventListener('click', () => {
+      prizePopup.classList.add('hidden');
+      wheelSection.classList.remove('hidden');
+      drawWheel();
+    });
+    
+    wheelCenter.addEventListener('click', spin);
+    fullscreenButton.addEventListener('click', toggleFullScreen);
+
+    okButton.addEventListener('click', () => {
+      winners.push({ name: currentWinner.name, prize: currentPrize.name });
+      
+      const winnerIndex = participants.findIndex(p => p.name === currentWinner.name);
+      if (winnerIndex > -1) {
+        participants.splice(winnerIndex, 1);
+      }
+
+      winnerPopup.classList.add('hidden');
+      wheelSection.classList.add('hidden');
+      
+      setupNextRound();
+    });
+
+    skipButton.addEventListener('click', () => {
+      prizes.unshift(currentPrize);
+      winnerPopup.classList.add('hidden');
+      wheelSection.classList.add('hidden');
+      
+      setupNextRound();
+    });
+
+  </script>
+</body>
 </html>

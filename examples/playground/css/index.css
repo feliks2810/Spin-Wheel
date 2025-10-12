@@ -2,31 +2,28 @@
   margin: 0;
   padding: 0;
   font-family: 'Lucida Grande', sans-serif;
-
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   user-select: none; /* Prevent selecting ui text when dragging */
 }
 
 html, body {
   height: 100%;
+  background-color: #f0f8ff; /* AliceBlue background */
 }
 
 body {
   /* Prevent pull-down-to-refresh gesture */
   overscroll-behavior-y: contain;
-
   /* Prevent iOS rubber-band effect */
   position: fixed;
   width: 100%;
-
   /* Prevent browser from handling touch events */
   touch-action: none;
-
   display: grid;
-  grid-template-columns: 1fr min-content;
+  grid-template-columns: 1fr;
   justify-items: stretch;
   align-items: stretch;
-
   font-size: 0.95em;
   --padding: 12px;
 }
@@ -42,112 +39,108 @@ body {
   overflow: hidden; /* Prevent grid blowout */
 }
 
-.frame-right {
-  background-color: #f0f0ee;
-  display: flex;
-  flex-direction: column;
-  gap: var(--padding);
-  overflow-y: scroll;
-  border-left: solid 1px #5c5c5c;
-  padding-bottom: 15px;
-}
-
-button.btn, label.btn {
-  padding: 4px 8px;
-  margin: 0px;
-  font-family: inherit;
-  font-size: inherit;
-  display: inline-block;
-  cursor: pointer;
-  background-color: white;
-  border: solid 1px #767676;
-  border-radius: 4px;
-  align-self: flex-start;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--padding) * 0.7);
-  padding: 0 var(--padding);
-  border-top: solid 1px #5c5c5c;
-}
-
-.input-group h2 {
-  font-size: 1.1em;
-  display: flex;
-  font-family: monospace;
-  /* background-color: #dfdfdb; */
-  padding: var(--padding) 0px 0px;
-  font-weight: normal;
-  white-space: nowrap;
-}
-.input-group h2 span:first-of-type {
-  display: inline-block;
-  font-family: inherit;
-  user-select: text;
-}
-.input-group h2 span:last-of-type {
-  margin-left:7px;
-  font-family: inherit;
-  width: 40px; /* fixed width so the panel can be auto sized */
-  user-select: text;
-}
-
-.input-group input[type="range"] {
-  cursor: pointer;
-}
-
-.input-group input[type="checkbox"] {
-  height: 22px;
-  width: 22px;
-  cursor: pointer;
-}
-
-.input-group input[type="file"] {
-  display: none;
-}
-
-.input-group input[type="input"] {
-  padding: 4px 8px;
-  font-family: inherit;
-  background-color: white;
-  border: solid 1px #767676;
-  border-radius: 4px;
-}
-
-.input-group button {
-  margin-top: var(--padding);
-}
-
-select {
-  padding: 2px;
-}
-
-label {
-  margin-right: 5px;
-}
-
 .toolbar {
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: var(--padding);
-  text-align: right;
+  text-align: center;
+  z-index: 10;
 }
 
-.btn.clear {
-  display: none;
+.btn {
+  padding: 12px 24px;
+  margin: 0;
+  font-family: inherit;
+  font-size: 1.2em;
+  font-weight: bold;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.1s ease;
 }
 
-/*************************************************/
+.btn:active {
+  transform: scale(0.95);
+}
+
+#spin-button {
+  background-color: #007bff; /* Bright Blue */
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+}
+
+#close-popup {
+  background-color: #f0f0ee;
+  color: #333;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
+
+/* Popup Styles */
+.popup-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: scale(0.7);
+  animation: popup-scale 0.3s forwards ease-out;
+}
+
+@keyframes popup-scale {
+  to {
+    transform: scale(1);
+  }
+}
+
+.popup-content h2 {
+  font-size: 2.5em;
+  color: #007bff;
+  margin-bottom: 10px;
+}
+
+.popup-content p {
+  font-size: 1.8em;
+  color: #333;
+}
+
+.pointer {
+  position: absolute;
+  top: 20px; /* Jarak dari atas */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 30px solid #E74C3C; /* Warna merah untuk panah */
+  z-index: 20;
+}
+
 /*************************************************/
 @media only screen and (max-width: 450px) {
-
   body {
     font-size: .85em;
     --padding: 10px;
   }
-
+  .btn {
+    padding: 10px 20px;
+    font-size: 1.1em;
+  }
 }

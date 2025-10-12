@@ -12,6 +12,8 @@ html, body {
 }
 
 body {
+  background-color: #D5DEEF;
+
   /* Prevent pull-down-to-refresh gesture */
   overscroll-behavior-y: contain;
 
@@ -32,6 +34,43 @@ body {
   overflow: hidden;
   height: 100%;
   width: 100%;
+}
+
+.pointer-wrapper {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.pointer {
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-top: 30px solid #c0392b; /* Warna merah untuk pointer */
+}
+
+.wheel-container {
+  position: relative;
+  width: 300px; /* Sesuaikan dengan ukuran roda Anda */
+  height: 300px; /* Sesuaikan dengan ukuran roda Anda */
+  margin: 50px auto;
+}
+
+.wheel-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 50px;
+  margin-left: -10px;
+  margin-top: -25px;
+  background-color: #8B4513; /* Warna coklat untuk pegangan */
+  border: 2px solid #000;
+  border-radius: 10px;
+  transform-origin: center 25px;
 }
 
 .gui-wrapper {
