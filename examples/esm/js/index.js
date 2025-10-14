@@ -3,6 +3,7 @@ import {Wheel} from '../../../dist/spin-wheel-esm.js';
 window.onload = () => {
 
   const props = {
+    overlayImage: './img/anchor.svg',
     items: [
       {
         label: 'one',
@@ -24,16 +25,10 @@ window.onload = () => {
 
   window.wheel = new Wheel(container, props);
 
-  const wheelContainer = document.querySelector('.wheel-container');
-  if (wheelContainer) {
-    const handleCount = 8;
-    const handleRadius = 150; // Sesuaikan dengan ukuran roda
-    for (let i = 0; i < handleCount; i++) {
-      const angle = (i / handleCount) * 360;
-      const handle = document.createElement('div');
-      handle.className = 'wheel-handle';
-      handle.style.transform = `rotate(${angle}deg) translate(0, -${handleRadius}px)`;
-      wheelContainer.appendChild(handle);
+  // Handle wheel click
+  window.wheel.canvas.addEventListener('click', () => {
+    if (!window.wheel.isSpinning) {
+      window.wheel.spin(500);
     }
-  }
+  });
 };
