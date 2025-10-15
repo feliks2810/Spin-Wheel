@@ -478,6 +478,8 @@
       prizeCounter.textContent = `(${prizes.length + 1} hadiah tersisa)`;
       prizeImageDisplay.src = currentPrize.image;
       prizePopup.classList.remove('hidden');
+
+      isSpinning = false;
     }
 
   const totalParticipants = 108;
