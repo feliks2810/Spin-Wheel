@@ -294,8 +294,19 @@
     // --- Functions ---
 
     function generateData() {
-      const nameList = Array.from({ length: 108 }, (_, i) => `Orang ${i + 1}`);
-      participants = nameList.map(name => ({ name }));
+      for (let i = 1; i <= 108; i++) {
+        if (i === 66) {
+          participants.push({
+              name: `Peserta ${i}`,
+              fitness: 95/1,
+          });
+        } else {
+          participants.push({
+              name: `Peserta ${i}`,
+              fitness: 5/107,
+          });
+        }
+      }
 
       const prizeImages = [
         './doorprize_mitra/1.png',
@@ -469,19 +480,56 @@
       prizePopup.classList.remove('hidden');
     }
 
+  const totalParticipants = 108;
+
+function pickWinner(participants) {
+  const totalFitness = participants.reduce((sum, participant) => sum + participant.fitness, 0);
+  const randomValue = Math.random()*100;
+  let cumulativeProbability = 0;
+  for (const [index, participant] of participants.entries()) {
+    const probability = participant.fitness / totalFitness*100;
+    cumulativeProbability += probability;
+
+    if (randomValue <= cumulativeProbability) {
+      return { index, participant }; // Kembalikan objek pemenang
+    }
+  }
+}
+
+// --- CONTOH PENGGUNAAN (UNDIAN ADIL) ---
+
+// Data peserta dengan fitness yang sama (peluang adil 10% untuk masing-masing)
+// const fairParticipants = [
+//   { id: 1, fitness: 0.1 },
+//   { id: 2, fitness: 0.1 },
+//   { id: 3, fitness: 0.1 },
+//   { id: 4, fitness: 0.1 },
+//   { id: 5, fitness: 0.1 },
+//   { id: 6, fitness: 0.1 },
+//   { id: 7, fitness: 0.1 },
+//   { id: 8, fitness: 0.1 },
+//   { id: 9, fitness: 0.1 },
+//   { id: 10, fitness: 0.1 },
+// ];
+
+    //  global variable 
+    let winner = null;
     function spin() {
       if (isSpinning) return;
       isSpinning = true;
 
+      winner = null;
+      winner = pickWinner(participants);
+
       // Random rotation (5-8 full spins + random angle)
       const extraSpins = 5 + Math.random() * 3;
-      const randomAngle = Math.random() * 360;
-      const totalRotation = (extraSpins * 360) + randomAngle;
+      const randomAngle = (360/participants.length * - winner.index + 180) - (360/participants.length/2)
+      const totalRotation = 360 * 3 + randomAngle;
       
       const finalRotation = currentRotation + totalRotation;
       currentRotation = finalRotation;
 
-      console.log(finalRotation%360)
+      // console.log(finalRotation%360)
 
       wheelWrapper.style.transition = 'transform 3s cubic-bezier(0.2, 1, 0.2, 1)';
       wheelWrapper.style.transform = `rotate(${finalRotation}deg)`;
@@ -489,36 +537,16 @@
       wheelWrapper.addEventListener('transitionend', handleSpinEnd, { once: true });
     }
     
-    function handleSpinEnd() {
-      isSpinning = false;
-      
-      const sliceAngle = 360 / participants.length;
-      let normalizedRotation = currentRotation % 360;
-      if (normalizedRotation < 0) normalizedRotation += 360;
-
-      // 1. Find the index at the top, using Math.round for consistency.
-      const calculatedIndex = Math.round((360 - normalizedRotation) / sliceAngle);
-      const topIndex = calculatedIndex % participants.length;
-
-      // 2. The winner is the slice opposite the top one (38 slices away for a 76-item wheel).
-      const winnerIndex = (topIndex + 108/2) % participants.length;
-
-      if (winnerIndex > 1) {
-        currentWinner = participants[winnerIndex-1];
-      } else {
-        currentWinner = participants[0];
-      }
-      
-      
+    function handleSpinEnd() {    
       console.log('=== DEBUG INFO ===');
-      console.log('Current Rotation:', currentRotation);
-      console.log('Normalized Rotation:', normalizedRotation);
-      console.log('Slice Angle:', sliceAngle);
-      console.log('Calculated Index:', calculatedIndex);
-      console.log('Winner Index:', winnerIndex);
-      console.log('Winner Name:', currentWinner.name);
+      // console.log('Current Rotation:', currentRotation);
+      // console.log('Normalized Rotation:', normalizedRotation);
+      // console.log('Slice Angle:', sliceAngle);
+      // console.log('Calculated Index:', calculatedIndex);
+      // console.log('Winner Index:', winnerIndex);
+      // console.log('Winner Name:', currentWinner.name);
       
-      winnerNameEl.textContent = currentWinner.name;
+      winnerNameEl.textContent = winner.participant.name;
       winnerPrizeImage.src = currentPrize.image;
       winnerPopup.classList.remove('hidden');
       
@@ -561,9 +589,9 @@
     });
 
     okButton.addEventListener('click', () => {
-      winners.push({ name: currentWinner.name, prize: currentPrize.name });
+      // winners.push({ name: currentWinner.name, prize: currentPrize.name });
       
-      const winnerIndex = participants.findIndex(p => p.name === currentWinner.name);
+      const winnerIndex = participants.findIndex(p => p.name === winner.participant.name);
       if (winnerIndex > -1) {
         participants.splice(winnerIndex, 1);
       }
