@@ -249,7 +249,7 @@
       <p id="winner-name"></p>
       <img id="winner-prize-image" class="prize-image" src="" alt="Prize Image"/>
       <div class="popup-buttons">
-        <button id="skip-button" class="btn btn-secondary">Skip</button>
+        <!-- <button id="skip-button" class="btn btn-secondary">Skip</button> -->
         <button id="ok-button" class="btn btn-success">OK</button>
       </div>
     </div>
@@ -277,7 +277,7 @@
     const winnerNameEl = document.getElementById('winner-name');
     const winnerPrizeImage = document.getElementById('winner-prize-image');
     const okButton = document.getElementById('ok-button');
-    const skipButton = document.getElementById('skip-button');
+    // const skipButton = document.getElementById('skip-button');
 
     // --- Data Setup ---
     let participants = [];
@@ -290,6 +290,9 @@
     let isSpinning = false;
     let currentRotation = 0;
     const colors = ['#A0522D', '#8B4513'];
+
+    let spinIndex = 0;
+    let spinCount = 0;
 
     // --- Functions ---
 
@@ -465,8 +468,19 @@
       });
     }
 
+    function setupFirstRound() {
+      currentPrize = prizes[spinIndex];
+    
+      prizeTitle.textContent = `${currentPrize.name}`;
+      prizeCounter.textContent = `Sebanyak ${currentPrize.qty} PC`;
+      prizeImageDisplay.src = currentPrize.image;
+      prizePopup.classList.remove('hidden');
+      
+      isSpinning = false;
+    }
+
     function setupNextRound() {
-      if (prizes.length === 0) {
+      if (spinIndex+1 > prizes.length) {
         alert('Semua hadiah telah diundi! Acara selesai.');
         wheelSection.classList.add('hidden');
         startDrawButton.classList.remove('hidden');
@@ -474,30 +488,56 @@
         return;
       }
 
-      currentPrize = prizes.shift();
-      
-      prizeTitle.textContent = `Hadiah: ${currentPrize.name}`;
-      prizeCounter.textContent = `(${prizes.length + 1} hadiah tersisa)`;
-      prizeImageDisplay.src = currentPrize.image;
-      prizePopup.classList.remove('hidden');
 
+      spinCount += 1;
+      localStorage.setItem('SPIN_COUNT', JSON.stringify(spinCount))
+
+      if (spinCount > JSON.parse(localStorage.getItem('PRIZE_MITRA'))[spinIndex].qty) {
+        spinIndex += 1;
+        spinCount = 1;
+        localStorage.setItem('SPIN_INDEX', spinIndex);
+        localStorage.setItem('SPIN_COUNT', spinCount);
+
+        currentPrize = prizes[spinIndex];
+        // currentPrize = prizes.shift();
+      
+        prizeTitle.textContent = `${currentPrize.name}`;
+        prizeCounter.textContent = `Sebanyak ${prizes.length + 1} PC`;
+        prizeImageDisplay.src = currentPrize.image;
+        prizePopup.classList.remove('hidden');
+      }
+      
       isSpinning = false;
     }
 
-  const totalParticipants = 108;
+  // const totalParticipants = 108;
 
-function pickWinner(participants, specialParticipants) {
-  const totalFitness = participants.reduce((sum, participant) => sum + participant.fitness, 0);
+function pickWinner() {
   const randomValue = Math.random()*100;
   let cumulativeProbability = 0;
-  for (const [index, participant] of participants.entries()) {
-    const probability = participant.fitness / totalFitness*100;
-    cumulativeProbability += probability;
 
-    if (randomValue <= cumulativeProbability) {
-      return { index, participant }; // Kembalikan objek pemenang
+  let specialParticipant = JSON.parse(localStorage.getItem('PRIZE_MITRA'))[spinIndex].participants
+  if (specialParticipant.length === 0) {
+    for (const [index, participant] of participants.entries()) {
+      const probability = 100/participants.length;
+      cumulativeProbability += probability;
+
+      if (randomValue <= cumulativeProbability) {
+        return { index, participant }; 
+      }
     }
   }
+
+  // const totalFitness = participants.reduce((sum, participant) => sum + participant.fitness, 0);
+  // let cumulativeProbability = 0;
+  // for (const [index, participant] of participants.entries()) {
+  //   const probability = participant.fitness / totalFitness*100;
+  //   cumulativeProbability += probability;
+
+  //   if (randomValue <= cumulativeProbability) {
+  //     return { index, participant }; // Kembalikan objek pemenang
+  //   }
+  // }
 }
 
 // --- CONTOH PENGGUNAAN (UNDIAN ADIL) ---
@@ -571,9 +611,10 @@ function pickWinner(participants, specialParticipants) {
     anchorSpinButton.style.display = 'none';
 
     startDrawButton.addEventListener('click', () => {
+      spinCount = JSON.parse(localStorage.getItem('SPIN_COUNT'));
       generateData();
       startDrawButton.classList.add('hidden');
-      setupNextRound();
+      setupFirstRound();
     });
 
     nextSpinButton.addEventListener('click', () => {
@@ -606,13 +647,13 @@ function pickWinner(participants, specialParticipants) {
       setupNextRound();
     }); 
 
-    skipButton.addEventListener('click', () => {
-      prizes.unshift(currentPrize);
-      winnerPopup.classList.add('hidden');
-      wheelSection.classList.add('hidden');
+    // skipButton.addEventListener('click', () => {
+    //   prizes.unshift(currentPrize);
+    //   winnerPopup.classList.add('hidden');
+    //   wheelSection.classList.add('hidden');
       
-      setupNextRound();
-    });
+    //   setupNextRound();
+    // });
 
   </script>
 </body>
